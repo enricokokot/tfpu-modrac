@@ -34,10 +34,15 @@ class T(TipoviTokena):
 def loop(lex):
     for znak in lex:
         if znak.isspace(): lex.zanemari()
+        # elif znak in {'i', 'I'}:
         elif znak.casefold() in {'i', 'd'}:
+            # lex >> ['N', 'n']
+            # lex >> ['C', 'c']
             next(lex)  # 'N' ili 'E', case insensitive
             next(lex)  # 'C'        , case insensitive
             yield lex.literal(T, case=False)
+        # elif znak in {'d', 'D'}:
+        # TODO
         elif znak == 'R':
             lex.prirodni_broj('')
             yield lex.token(T.REG)
@@ -51,7 +56,9 @@ def loop(lex):
 class P(Parser):
     def program(p) -> 'Program':
         naredbe = [p.naredba()]
-        while not p > {KRAJ, T.VZATV}: naredbe.append(p.naredba())
+        # while not p > {KRAJ, T.VZATV}: naredbe.append(p.naredba())
+        # ispod pozitivan primjer tj. opcija, ne kako bi bilo bolje
+        while p > {T.INC, T.DEC, T.REG}: naredbe.append(p.naredba())
         return Program(naredbe)
 
     def naredba(p) -> 'Promjena|Petlja':
