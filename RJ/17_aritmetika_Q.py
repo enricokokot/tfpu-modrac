@@ -15,7 +15,9 @@ class T(TipoviTokena):
     class IME(Token):
         def izvrijedni(self):
             if self not in rt.memorija:
-                raise self.nedeklaracija(f"{rt.trenutno_ime}")
+                raise self.nedeklaracija(f"pri pridruživanju {rt.trenutno_ime}")
+            return rt.memorija[self]
+
     class BROJ(Token):
         def izvrijedni(self):
             return int(self.sadržaj)
@@ -26,7 +28,7 @@ class T(TipoviTokena):
 def aritmQ(lex):
     for znak in lex:
         if znak.isalpha() or znak == "_":
-            lex + {str.isalpha, str.isdecimal, "_"}
+            lex * {str.isalpha, str.isdecimal, "_"}
             yield lex.token(T.IME)
         elif znak.isdecimal():
             lex * str.isdecimal
@@ -34,13 +36,13 @@ def aritmQ(lex):
         elif znak.isspace() and znak != "\n": lex.zanemari()
         else: yield lex.literal(T)
 
-aritmQ('''\
+print(aritmQ('''\
 a = 2/3
 b = a + 1
 a = a + 3
 b = x - 1
 a = 007
-''')
+'''))
 
 ## BKG
 # program -> naredba | program naredba
@@ -53,40 +55,40 @@ class P(Parser):
     def program(p) -> "Program":
         naredbe = []
         while not p > KRAJ:
-            return naredbe.append(p.naredba())
+            naredbe.append(p.naredba())
         return Program(naredbe)
 
-def naredba(p) -> "Pridruži":
-    ime = p >> T.IME
-    P >> T.JEDNAKO
-    izraz = p.izraz()
-    p >> T.NOVIRED
-    return Pridruži(ime, izraz)
+    def naredba(p) -> "Pridruži":
+        ime = p >> T.IME
+        p >> T.JEDNAKO
+        izraz = p.izraz()
+        p >> T.NOVIRED
+        return Pridruži(ime, izraz)
 
-def izraz(p) -> "Zbroj|Razlika|član":
-    stablo = p.član()
-    while operator := p >= {T.PLUS, T.MINUS}:
-        if operator ^ T.PLUS: stablo = Zbroj(stablo, p.član())
-        elif operator ^ T.MINUS: stablo = Razlika(stablo, p.član())
-        else: assert False, f"nemoguć operator [operator]"
-    # return stablo
+    def izraz(p) -> "Zbroj|Razlika|član":
+        stablo = p.član()
+        while operator := p >= {T.PLUS, T.MINUS}:
+            if operator ^ T.PLUS: stablo = Zbroj(stablo, p.član())
+            elif operator ^ T.MINUS: stablo = Razlika(stablo, p.član())
+            else: assert False, f"nemoguć operator [operator]"
+        return stablo
 
-def član(p) -> "Umnožak|Količnik|faktor":
-    stablo = p.faktor()
-    while operator := p >= {T.PUTA, T.KROZ}:
-        if operator ^T.PUTA: stablo = Umnožak(stablo, p.faktor())
-        elif operator ^T.KROZ:
-            stablo = Količnik(stablo, p.faktor(), operator)
-        else: assert False, f"nemoguć operator [operator]"
-    return stablo
+    def član(p) -> "Umnožak|Količnik|faktor":
+        stablo = p.faktor()
+        while operator := p >= {T.PUTA, T.KROZ}:
+            if operator ^T.PUTA: stablo = Umnožak(stablo, p.faktor())
+            elif operator ^T.KROZ:
+                stablo = Količnik(stablo, p.faktor(), operator)
+            else: assert False, f"nemoguć operator [operator]"
+        return stablo
 
-def faktor(p) -> "IME|BROJ|izraz":
-    if pročitao := p >= {T.IME, T.BROJ}: return pročitao
-    else:
-        p >> T.OTV
-        u_zagradi = p.izraz()
-        p >> T.ZATV
-        return u_zagradi
+    def faktor(p) -> "IME|BROJ|izraz":
+        if pročitao := p >= {T.IME, T.BROJ}: return pročitao
+        else:
+            p >> T.OTV
+            u_zagradi = p.izraz()
+            p >> T.ZATV
+            return u_zagradi
 
 ### AST
 # Program: naredbe: Pridruži+
@@ -143,7 +145,8 @@ prikaz(P('''\
 a = 2/3
 b = a + 1
 a = a + 3
-b = x - 1
+d = 5 / (1 + a - a)
+b = 0 - 1
 a = 007
 _xy = 2-(4+2)
-''').izvrši())
+'''))
