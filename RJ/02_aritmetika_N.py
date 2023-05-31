@@ -14,55 +14,79 @@ jedinice u izrazima, te pojednostavljuje izraze koji ih sadrže
 from vepar import *
 
 class T(TipoviTokena):
-    PLUS, PUTA, POTENCIRANJE, OTV, ZATV = '+*^()'
+    PLUS, PUTA, NA, OTV, ZATV = '+*^()'
     class BROJ(Token):
         def vrijednost(t): return int(t.sadržaj)
 
 @lexer
 def moj(lex):
     for znak in lex:
-        if znak.isdecimal():
-            lex.prirodni_broj(znak, nula=False)
+        if znak == "0": yield lex.token(T.BROJ)
+        elif znak.isdecimal():
+            lex * str.isdecimal
             yield lex.token(T.BROJ)
+        elif znak.isspace(): lex.zanemari()
         else: yield lex.literal(T)
 
 
 moj("1+2^3")
+# raise SystemExit
 
 ### BKG
 # izraz -> član | član PLUS izraz
 # član -> faktor | faktor PUTA član
-# faktor -> BROJ | OTV izraz ZATV
+# faktor -> faktor NA baza
+# baza -> BROJ
 
 class P(Parser):
-    def izraz(p): 
-        prvi = p.član()
-        if p >= T.PLUS:
-            drugi = p.izraz()
-            return Zbroj(prvi, drugi)
-        else: return prvi
+    def izraz(p) -> 'član|Zbroj': 
+        t = p.član()
+        while p >= T.PLUS:
+            t = Zbroj(t, p.član())
+        return t
 
-    def član(p):
-        prvi = p.faktor()
+    def član(p) -> 'faktor|Umnožak':
+        t = p.faktor()
         if p >= T.PUTA:
-            drugi = p.član()
-            return Umnožak(prvi, drugi)
-        else: return prvi
+            t = Umnožak(t, p.član())
+        return t
 
-    def faktor(p):
-        if broj := p >= T.BROJ: return broj
-        p >> T.OTV
-        u_zagradi = p.izraz()
-        p >> T.ZATV
-        return u_zagradi
+    def faktor(p) -> 'baza|Potencija':
+        t = p.baza()
+        if p >= T.NA:
+            t = Potencija(t, p.član())
+        return t
+
+    def baza(p) -> 'izraz':
+        if t := p >= T.BROJ: pass
+        else:
+            p >> T.OTV
+            t = p.izraz()
+            p >> T.ZATV
+        return t
+
 
 class Zbroj(AST):
-    lijevo: ...
-    desno: ...
+    lijevi: 'izraz'
+    desni: 'izraz'
 
-class Umnožak(Zbroj): pass
+    def vrijednost(self):
+        return self.lijevi.vrijednost() + self.desni.vrijendost()
 
-class Faktor(Zbroj): pass
+class Umnožak(Zbroj):
+    lijevi: 'izraz'
+    desni: 'izraz'
+
+    def vrijednost(self):
+        return self.lijevi.vrijednost() * self.desni.vrijendost()
+
+class Potencija(Zbroj):
+    lijevi: 'izraz'
+    desni: 'izraz'
+
+    def vrijednost(self):
+        return self.lijevi.vrijednost() ** self.desni.vrijendost()
 
 # prikaz(P('5^2+8*12'))
-prikaz(P('5+8*12'))
+# prikaz(P('5+8*12'))
+prikaz(P('2+(3^3+4)+3'))
