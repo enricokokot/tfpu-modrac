@@ -66,7 +66,6 @@ print(moj("""
             &hmm;
             hm hm
             <ol>
-                <li>Ovo je <a?> prvi item.</li>
                 <li>A ovo je drugi.</li>
                 <li> Ovo je   --- ne bi čovjek vjerovao  --- treći.</li>
                 <li>
