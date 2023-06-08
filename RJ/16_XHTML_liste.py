@@ -35,7 +35,7 @@ class T(TipoviTokena):
     class TEKST(Token): pass
 
 @lexer
-def moj(lex):
+def lex(lex):
     for znak in lex:
         if znak.isspace(): lex.zanemari()
         elif znak == '<':
@@ -57,7 +57,31 @@ def moj(lex):
             lex < {'', '<', str.isspace}
             yield lex.token(T.TEKST)
 
-print(moj("""
+### BKG
+# dokument -> OTHML OHEAD TEKST ZHEAD OBODY sadržaj ZBODY ZHTML
+# sadržaj -> TEKST | OUL elementi ZOL | OOL elementi ZOL
+# elementi -> OLI sadržaj ZLI
+
+class P(Parser):
+    def dokument(p):
+        p >> T.OHTML
+        p >> T.OHEAD
+        while not p > T.ZHEAD: pass
+        p >> T.OBODY
+        t = []
+        while not p >= T.ZBODY: t.append(p.sadržaj())
+        p >> T.ZHTML
+        return Dokument(zaglavlje, tijelo)
+
+    def sadržaj(p): pass
+
+    def elementi(p): pass
+
+class Dokument(AST):
+    zaglavlje: ...
+    tijelo: ...
+
+test_1 = """
 <html>
         <head>
             bla   bla
@@ -83,4 +107,7 @@ print(moj("""
             I još malo<ul><li>uvučeno</li></ul>
         </body>
     </html>
-"""))
+"""
+
+print(lex(test_1))
+print(P(test_1))
